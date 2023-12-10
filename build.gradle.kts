@@ -15,6 +15,9 @@ dependencies {
     // Minestom - base
     implementation("dev.hollowcube:minestom-ce:8715f4305d") // using forked version of Minestom for 1.20.1
 
+    // Configuration
+    implementation("com.electronwill.night-config:toml:3.6.0")
+
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
