@@ -1,5 +1,6 @@
 plugins {
     id("java")
+    id("org.sonarqube") version "3.5.0.2730"
 }
 
 group = "fr.divineexodus"
@@ -16,4 +17,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "DivineExodus_server_AYxTmxkxY2D0l8qiaVAK")
+    }
 }
