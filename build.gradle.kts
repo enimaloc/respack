@@ -20,6 +20,7 @@ tasks.test {
 }
 
 sonar {
+    println("Using ${System.getenv("SONAR_HOST_URL")} as host")
     properties {
         property("sonar.projectKey", "DivineExodus_server_AYxTmxkxY2D0l8qiaVAK")
     }
