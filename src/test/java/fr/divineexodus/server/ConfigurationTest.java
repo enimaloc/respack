@@ -1,8 +1,9 @@
-package fr.divineexodus;
+package fr.divineexodus.server;
 
 import com.electronwill.nightconfig.core.Config;
 import com.electronwill.nightconfig.core.conversion.InvalidValueException;
 import com.electronwill.nightconfig.core.conversion.ObjectConverter;
+import fr.divineexodus.server.Configuration;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

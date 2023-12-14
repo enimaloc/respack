@@ -1,4 +1,4 @@
-package fr.divineexodus;
+package fr.divineexodus.server;
 
 import com.electronwill.nightconfig.core.conversion.Path;
 import com.electronwill.nightconfig.core.conversion.SpecIntInRange;

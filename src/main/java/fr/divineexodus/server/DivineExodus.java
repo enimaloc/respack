@@ -1,4 +1,4 @@
-package fr.divineexodus;
+package fr.divineexodus.server;
 
 import com.electronwill.nightconfig.core.conversion.ObjectConverter;
 import com.electronwill.nightconfig.core.file.FileConfig;
