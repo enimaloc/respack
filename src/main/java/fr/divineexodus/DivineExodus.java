@@ -9,13 +9,14 @@ import org.slf4j.Logger;
 import java.nio.charset.StandardCharsets;
 
 public class DivineExodus {
-    public static FileConfig CONFIG;
+    public static FileConfig CONFIG_FILE;
+    public static Configuration CONFIG;
     public static final Logger LOGGER = MinecraftServer.LOGGER;
 
     public DivineExodus(String filePath) {
         LOGGER.info("Starting DivineExodus");
         LOGGER.info("Loading configuration file {}", filePath);
-        DivineExodus.CONFIG = FileConfig.builder(filePath)
+        DivineExodus.CONFIG_FILE = FileConfig.builder(filePath)
                 .concurrent()
                 .autoreload()
                 .autosave()
@@ -30,7 +31,8 @@ public class DivineExodus {
                 .writingMode(WritingMode.REPLACE)
                 .sync()
                 .build();
-        DivineExodus.CONFIG.load();
+        DivineExodus.CONFIG_FILE.load();
+        DivineExodus.CONFIG = new ObjectConverter().toObject(DivineExodus.CONFIG_FILE, Configuration::new);
         LOGGER.info("Configuration loaded");
     }
 
