@@ -14,8 +14,8 @@ class ConfigurationTest {
         config.set("server.ip", "127.0.0.1");
         config.set("server.port", 25569);
         Configuration configuration = new ObjectConverter().toObject(config, Configuration::new);
-        assertEquals("127.0.0.1", configuration.serverIp);
-        assertEquals(25569, configuration.serverPort);
+        assertEquals("127.0.0.1", configuration.getServerIp());
+        assertEquals(25569, configuration.getServerPort());
     }
 
     @Test
