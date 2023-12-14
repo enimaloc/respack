@@ -23,6 +23,14 @@ public class Configuration {
                 '}';
     }
 
+    public String getServerIp() {
+        return serverIp;
+    }
+
+    public int getServerPort() {
+        return serverPort;
+    }
+
     // region Validators
     public static class IpValidator implements Predicate<Object> {
         @Override
