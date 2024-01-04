@@ -3,6 +3,7 @@ package fr.divineexodus.server.texture.extra;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import fr.divineexodus.server.texture.lang.Lang;
+import fr.divineexodus.server.texture.lang.key.Key;
 import fr.divineexodus.utils.ISO3166;
 
 import java.util.ArrayList;
@@ -21,15 +22,15 @@ public class RegionalCompliancies {
         return add(new Sub(delay, period, title, description));
     }
 
-    public RegionalCompliancies add(int delay, int period, Lang.Key title, String description) {
+    public RegionalCompliancies add(int delay, int period, Key title, String description) {
         return add(delay, period, title.getKey(), description);
     }
 
-    public RegionalCompliancies add(int delay, int period, String title, Lang.Key description) {
+    public RegionalCompliancies add(int delay, int period, String title, Key description) {
         return add(delay, period, title, description.getKey());
     }
 
-    public RegionalCompliancies add(int delay, int period, Lang.Key title, Lang.Key description) {
+    public RegionalCompliancies add(int delay, int period, Key title, Key description) {
         return add(delay, period, title.getKey(), description.getKey());
     }
 
@@ -37,15 +38,15 @@ public class RegionalCompliancies {
         return add(new Sub(period, title, description));
     }
 
-    public RegionalCompliancies add(int period, Lang.Key title, String description) {
+    public RegionalCompliancies add(int period, Key title, String description) {
         return add(period, title.getKey(), description);
     }
 
-    public RegionalCompliancies add(int period, String title, Lang.Key description) {
+    public RegionalCompliancies add(int period, String title, Key description) {
         return add(period, title, description.getKey());
     }
 
-    public RegionalCompliancies add(int period, Lang.Key title, Lang.Key description) {
+    public RegionalCompliancies add(int period, Key title, Key description) {
         return add(period, title.getKey(), description.getKey());
     }
 
@@ -99,15 +100,15 @@ public class RegionalCompliancies {
         private String title;
         private String message;
 
-        public Sub(int period, Lang.Key title, String message) {
+        public Sub(int period, Key title, String message) {
             this(0, period, title.getKey(), message);
         }
 
-        public Sub(int period, String title, Lang.Key message) {
+        public Sub(int period, String title, Key message) {
             this(0, period, title, message.getKey());
         }
 
-        public Sub(int period, Lang.Key title, Lang.Key message) {
+        public Sub(int period, Key title, Key message) {
             this(0, period, title.getKey(), message.getKey());
         }
 
@@ -115,15 +116,15 @@ public class RegionalCompliancies {
             this(0, period, title, message);
         }
 
-        public Sub(int delay, int period, Lang.Key title, String message) {
+        public Sub(int delay, int period, Key title, String message) {
             this(delay, period, title.getKey(), message);
         }
 
-        public Sub(int delay, int period, String title, Lang.Key message) {
+        public Sub(int delay, int period, String title, Key message) {
             this(delay, period, title, message.getKey());
         }
 
-        public Sub(int delay, int period, Lang.Key title, Lang.Key message) {
+        public Sub(int delay, int period, Key title, Key message) {
             this(delay, period, title.getKey(), message.getKey());
         }
 
