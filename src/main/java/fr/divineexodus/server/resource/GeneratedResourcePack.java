@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import fr.divineexodus.server.gson.UnicodeWriter;
 import fr.divineexodus.server.resource.extra.RegionalCompliancies;
+import fr.divineexodus.server.resource.font.FontKey;
 import fr.divineexodus.server.resource.font.FontModifier;
 import fr.divineexodus.server.resource.lang.Lang;
 import fr.divineexodus.server.resource.lang.MCLocale;
@@ -24,7 +25,7 @@ import java.util.function.Predicate;
 public class GeneratedResourcePack {
     public static final Logger LOGGER = LoggerFactory.getLogger(GeneratedResourcePack.class);
     private ResourcePackMeta meta;
-    private FontModifier fontModifier = new FontModifier();
+    private Map<String, FontModifier> fontModifiers = new HashMap<>();
     private Map<ISO3166, RegionalCompliancies> regionalCompliancies = new HashMap<>();
     private List<Texture> textures = new ArrayList<>();
     private Map<MCLocale, Lang> langs = new HashMap<>();
@@ -41,8 +42,31 @@ public class GeneratedResourcePack {
         this.meta = ResourcePackMeta.of(version);
     }
 
+    public List<FontModifier> getFontModifiers() {
+        return Collections.unmodifiableList(new ArrayList<>(fontModifiers.values()));
+    }
+
     public FontModifier getFontModifier() {
-        return fontModifier;
+        return getFontModifier((String) null);
+    }
+
+    public FontModifier getFontModifier(@Nullable FontKey key) {
+        String name = null;
+        if (key != null) {
+            name = "";
+            if (key.namespace() != null) {
+                name += key.namespace() + "_";
+            }
+            name += key.value();
+        }
+        return getFontModifier(name);
+    }
+
+    public FontModifier getFontModifier(@Nullable String name) {
+        if (name == null) {
+            name = "default";
+        }
+        return fontModifiers.computeIfAbsent(name, FontModifier::new);
     }
 
     public ResourcePackMeta getMeta() {
@@ -93,14 +117,17 @@ public class GeneratedResourcePack {
         assetsFolder.mkdirs();
         // region Font
         File fontFolder = new File(assetsFolder, "minecraft/font");
-        if (!fontModifier.isEmpty()) {
+        if (!fontModifiers.isEmpty()) {
             LOGGER.debug("Creating font file");
-            LOGGER.trace("- JSON: {}", gson.toJson(fontModifier.toJson()));
-            fontFolder.mkdirs();
-            File fontFile = new File(fontFolder, "default.json");
-            fontFile.createNewFile();
-            try (UnicodeWriter writer = new UnicodeWriter(new FileWriter(fontFile))) {
-                writer.write(gson.toJson(fontModifier.toJson()));
+            for (FontModifier fontModifier : fontModifiers.values()) {
+                LOGGER.debug("- name: {}", fontModifier.getFontName());
+                LOGGER.trace("- JSON: {}", gson.toJson(fontModifier.toJson()));
+                fontFolder.mkdirs();
+                File fontFile = new File(fontFolder, fontModifier.getFontName()+".json");
+                fontFile.createNewFile();
+                try (UnicodeWriter writer = new UnicodeWriter(new FileWriter(fontFile))) {
+                    writer.write(gson.toJson(fontModifier.toJson()));
+                }
             }
         } else {
             fontFolder.delete();

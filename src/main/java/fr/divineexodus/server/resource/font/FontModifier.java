@@ -12,9 +12,18 @@ import java.util.stream.IntStream;
 public class FontModifier {
     public static final int START_RANGE = 0xE000;
     public static final int END_RANGE = 0xF8FF;
+    private final String fontName;
     private boolean invalid = true;
 
     private List<Provider> providers = new ArrayList<>();
+
+    public FontModifier(String fontName) {
+        this.fontName = fontName;
+    }
+
+    public String getFontName() {
+        return fontName;
+    }
 
     public FontModifier addModifier(Provider provider) {
         providers.add(provider);
@@ -23,9 +32,9 @@ public class FontModifier {
     }
 
     public void rebuild() {
-        int c = START_RANGE;
+        int c = fontName.equals("default") ? START_RANGE : 0;
         for (Provider provider : providers) {
-            if (c + provider.getLength() > END_RANGE) {
+            if (fontName.equals("default") && c + provider.getLength() > END_RANGE) {
                 throw new IllegalStateException("Not enough space for all chars");
             }
             provider.setChars(IntStream.range(c, c + provider.getLength()).toArray());
@@ -87,5 +96,13 @@ public class FontModifier {
 
     public boolean isEmpty() {
         return providers.isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return "FontModifier{" +
+                "fontName='" + fontName + '\'' +
+                ", providers=" + providers +
+                '}';
     }
 }
