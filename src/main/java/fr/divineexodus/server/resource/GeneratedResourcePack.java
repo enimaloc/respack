@@ -2,6 +2,7 @@ package fr.divineexodus.server.resource;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.sun.net.httpserver.HttpServer;
 import fr.divineexodus.server.gson.UnicodeWriter;
 import fr.divineexodus.server.resource.extra.RegionalCompliancies;
 import fr.divineexodus.server.resource.font.FontKey;
@@ -12,23 +13,34 @@ import fr.divineexodus.server.resource.meta.ResourcePackMeta;
 import fr.divineexodus.server.resource.texture.Texture;
 import fr.divineexodus.utils.ISO3166;
 import fr.divineexodus.utils.MinecraftVersion;
+import fr.divineexodus.utils.NetUtils;
 import net.minestom.server.MinecraftServer;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class GeneratedResourcePack {
     public static final Logger LOGGER = LoggerFactory.getLogger(GeneratedResourcePack.class);
+    private static HttpServer server;
     private ResourcePackMeta meta;
     private Map<String, FontModifier> fontModifiers = new HashMap<>();
     private Map<ISO3166, RegionalCompliancies> regionalCompliancies = new HashMap<>();
     private List<Texture> textures = new ArrayList<>();
     private Map<MCLocale, Lang> langs = new HashMap<>();
+    private File outputDirectory;
+    private File outputZip;
+    private String httpPath;
 
     public GeneratedResourcePack() {
         this.meta = ResourcePackMeta.of(new MinecraftVersion(MinecraftServer.VERSION_NAME));
@@ -85,9 +97,17 @@ public class GeneratedResourcePack {
         textures.add(texture);
     }
 
-    public void pack() {
+    public void build() {
         meta.buildWith(langs.keySet().stream().filter(Predicate.not(MCLocale::defaultLocale)).toList());
-        fontModifier.rebuild();
+        for (FontModifier fontModifier : fontModifiers.values()) {
+            fontModifier.rebuild();
+        }
+    }
+
+    public File generate() throws IOException {
+        Path directory = Files.createTempDirectory("resource-pack.");
+        generate(directory.toFile());
+        return directory.toFile();
     }
 
     public void generate(File output) throws IOException {
@@ -95,7 +115,7 @@ public class GeneratedResourcePack {
     }
 
     public void generate(File output, Gson gson) throws IOException {
-        pack();
+        build();
         LOGGER.info("Generating resource pack in {}", output.getAbsolutePath());
         // region MCMETA
         if (meta.getPackFormat() > 0) {
@@ -179,7 +199,7 @@ public class GeneratedResourcePack {
                 LOGGER.debug("Creating lang file");
                 LOGGER.debug("- locale: {}", entry.getKey());
                 LOGGER.trace("- JSON: {}", gson.toJson(entry.getValue().toJson()));
-                File langFile = new File(langFolder, entry.getKey().code()+".json");
+                File langFile = new File(langFolder, entry.getKey().code() + ".json");
                 langFile.createNewFile();
                 try (FileWriter writer = new FileWriter(langFile)) {
                     writer.write(gson.toJson(entry.getValue().toJson()));
@@ -190,5 +210,135 @@ public class GeneratedResourcePack {
         }
         // endregion
         LOGGER.info("Resource pack generated");
+        outputDirectory = output;
+    }
+
+    public File pack() throws IOException {
+        File tempFile = File.createTempFile("resource-pack.", ".zip");
+        pack(tempFile.getParentFile());
+        return tempFile;
+    }
+
+    public void pack(File output) throws IOException {
+        if (outputDirectory == null || !outputDirectory.exists()) {
+            outputDirectory = generate();
+        }
+        LOGGER.info("Packing resource pack in {}", output.getAbsolutePath());
+        output.createNewFile();
+        try (FileOutputStream fos = new FileOutputStream(output);
+             ZipOutputStream zos = new ZipOutputStream(fos)) {
+            Files.walk(outputDirectory.toPath())
+                    .filter(Files::isRegularFile)
+                    .forEach(path -> {
+                        try {
+                            zos.putNextEntry(new ZipEntry(outputDirectory.toPath().relativize(path).toString().replace("\\", "/")));
+                            zos.write(Files.readAllBytes(path));
+                            zos.closeEntry();
+                        } catch (IOException e) {
+                            LOGGER.error("Unable to pack resource pack", e);
+                        }
+                    });
+        }
+        LOGGER.info("Resource pack packed");
+        outputZip = output;
+    }
+
+    public byte[] getMD5() throws NoSuchAlgorithmException, IOException {
+        MessageDigest md5 = MessageDigest.getInstance("MD5");
+        md5.update(Files.readAllBytes(outputZip.toPath()));
+        return md5.digest();
+    }
+
+    public String getHttpPath() {
+        return httpPath;
+    }
+
+    public String getUrl() {
+        return "http://" + server.getAddress().getHostString() + ":" + server.getAddress().getPort() + httpPath;
+    }
+
+    public URI getUri() {
+        return URI.create(getUrl());
+    }
+
+    public UploadedResourcePack publishToMCPack() throws IOException {
+        if (outputZip == null || !outputZip.exists()) {
+            outputZip = pack();
+        }
+
+        URLConnection connection = new URL("https://mc-packs.net/").openConnection();
+        connection.setDoOutput(true);
+        String boundary = Long.toHexString(System.currentTimeMillis());
+        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+        try (OutputStream output = connection.getOutputStream();
+             PrintWriter writer = new PrintWriter(new OutputStreamWriter(output, "UTF-8"), true)) {
+            writer.append("--").append(boundary).append("\r\n");
+            writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"").append(outputZip.getName()).append("\"").append("\r\n");
+            writer.append("Content-Type: application/x-zip-compressed").append("\r\n");
+            writer.append("\r\n").flush();
+            Files.copy(outputZip.toPath(), output);
+            output.flush();
+            writer.append("\r\n").flush();
+            writer.append("--").append(boundary).append("--").append("\r\n").flush();
+        }
+
+        HttpURLConnection result = ((HttpURLConnection) connection);
+        if (result.getResponseCode() != 200) {
+            throw new IOException("Bad response code: " + result.getResponseCode());
+        }
+        LOGGER.info("Resource pack published to MCPack");
+        URLConnection redirect = result.getURL().openConnection();
+        redirect.connect();
+        String[] content = new String[2];
+        int i = 0;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(redirect.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("<input")) {
+                    content[i++] = line.substring(line.indexOf("value=\"") + 7, line.lastIndexOf("\""));
+                }
+            }
+        }
+        LOGGER.debug("content = {}", Arrays.toString(content));
+        return new UploadedResourcePack(content[0], content[1]);
+    }
+    public record UploadedResourcePack(String url, String hash) {
+
+    }
+
+    public void addToHttpServer(String path) throws IOException {
+        if (outputZip == null || !outputZip.exists()) {
+            outputZip = pack();
+        }
+        if (path == null) {
+            path = "/";
+        }
+        if (server == null) {
+            throw new IllegalStateException("HTTP server not started");
+        }
+        server.createContext(path, exchange -> {
+            exchange.sendResponseHeaders(200, outputZip.length());
+            try (OutputStream os = exchange.getResponseBody()) {
+                Files.copy(outputZip.toPath(), os);
+            }
+            exchange.close();
+        });
+        httpPath = path;
+        LOGGER.debug("HTTP context created: {}", path);
+    }
+
+    public static void startHttpServer(int port) throws IOException {
+        startHttpServer(NetUtils.getPublicIp(), port);
+    }
+
+    public static void startHttpServer(String ip, int port) throws IOException {
+        if (server != null) {
+            throw new IllegalStateException("HTTP server already started");
+        }
+        LOGGER.debug("Creating HTTP server");
+        server = HttpServer.create(new InetSocketAddress(InetAddress.getByName(ip), port), 0);
+        server.start();
+        LOGGER.info("HTTP server started");
     }
 }
