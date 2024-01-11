@@ -1,2 +1,2 @@
-rootProject.name = "DivineExodus"
+rootProject.name = "respack"
 

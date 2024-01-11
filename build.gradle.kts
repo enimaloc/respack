@@ -1,16 +1,12 @@
 plugins {
     id("java")
-    id("application")
+    id("java-library")
     id("org.sonarqube") version "4.4.1.3373"
     id("jacoco-report-aggregation")
 }
 
-group = "fr.divineexodus"
+group = "fr.enimaloc"
 version = "1.0-SNAPSHOT"
-
-application {
-    mainClass.set("fr.divineexodus.DivineExodus")
-}
 
 repositories {
     mavenCentral()
@@ -18,14 +14,12 @@ repositories {
 }
 
 dependencies {
-    // Minestom - base
-    implementation("dev.hollowcube:minestom-ce:dev") // using self-built forked version of Minestom for 1.20.4
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("net.kyori:adventure-api:4.14.0")
 
-    // Configuration
-    implementation("com.electronwill.night-config:toml:3.6.0")
-
+    implementation("org.slf4j:slf4j-api:2.0.5")
     // Testing
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
+    testImplementation(platform("org.junit:junit-bom:5.9.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
@@ -34,9 +28,8 @@ tasks.test {
 }
 
 sonar {
-    println("Using ${System.getenv("SONAR_HOST_URL")} as host")
     properties {
-        property("sonar.projectKey", "DivineExodus_server_AYxTmxkxY2D0l8qiaVAK")
+        property("sonar.projectKey", "enimaloc_respack_AYz32ZJPY2D0l8qiaVBK")
     }
 }
 
