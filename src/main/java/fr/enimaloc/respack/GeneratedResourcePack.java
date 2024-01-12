@@ -40,6 +40,7 @@ public class GeneratedResourcePack {
     private File outputDirectory;
     private File outputZip;
     private String httpPath;
+    private UploadedResourcePack uploadedResourcePack;
 
     public GeneratedResourcePack(ResourcePackMeta meta) {
         this.meta = meta;
@@ -231,6 +232,12 @@ public class GeneratedResourcePack {
     }
 
     public byte[] getMD5() throws NoSuchAlgorithmException, IOException {
+        if (uploadedResourcePack != null) {
+            return uploadedResourcePack.hash().getBytes();
+        }
+        if (outputZip == null || !outputZip.exists()) {
+            outputZip = pack();
+        }
         MessageDigest md5 = MessageDigest.getInstance("MD5");
         md5.update(Files.readAllBytes(outputZip.toPath()));
         return md5.digest();
@@ -241,6 +248,12 @@ public class GeneratedResourcePack {
     }
 
     public String getUrl() {
+        if (server == null && uploadedResourcePack == null) {
+            throw new IllegalStateException("HTTP server not started and resource pack not published");
+        }
+        if (uploadedResourcePack != null) {
+            return uploadedResourcePack.url();
+        }
         return "http://" + server.getAddress().getHostString() + ":" + server.getAddress().getPort() + httpPath;
     }
 
@@ -288,7 +301,7 @@ public class GeneratedResourcePack {
             }
         }
         LOGGER.debug("content = {}", Arrays.toString(content));
-        return new UploadedResourcePack(content[0], content[1]);
+        return uploadedResourcePack = new UploadedResourcePack(content[0], content[1]);
     }
     public record UploadedResourcePack(String url, String hash) {
 
