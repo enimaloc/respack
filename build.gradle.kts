@@ -8,19 +8,35 @@ plugins {
 group = "fr.enimaloc"
 version = "1.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-    maven(url = "https://jitpack.io")
-}
+subprojects {
+    apply(plugin = "java")
+    apply(plugin = "java-library")
 
-dependencies {
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("net.kyori:adventure-api:4.14.0")
+    group = "fr.enimaloc"
+    version = "1.0-SNAPSHOT"
 
-    implementation("org.slf4j:slf4j-api:2.0.5")
-    // Testing
-    testImplementation(platform("org.junit:junit-bom:5.9.2"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        // Test
+        testImplementation(platform("org.junit:junit-bom:5.9.1"))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    tasks.withType<JavaCompile> {
+        options.encoding = "UTF-8"
+    }
+
+    tasks.withType<Test> {
+        useJUnitPlatform()
+    }
 }
 
 tasks.test {
